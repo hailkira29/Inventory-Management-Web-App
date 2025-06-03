@@ -53,8 +53,8 @@ A comprehensive, feature-rich inventory management web application built with Dj
 
 ### 1. Clone & Setup
 ```bash
-git clone https://github.com/hailkira29/django-inventory-management.git
-cd django-inventory-management
+git clone https://github.com/hailkira29/Inventory-Management-Web-App.git
+cd Inventory-Management-Web-App
 
 # Create virtual environment
 python -m venv venv
