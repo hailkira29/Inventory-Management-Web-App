@@ -1,0 +1,211 @@
+{% extends 'inventory/base.html' %}
+
+{% block title %}{{ report_title }} - Inventory Management{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="bi bi-file-earmark-text"></i> {{ report_title }}</h1>
+    <div class="btn-group">
+        <a href="{% url 'inventory:analytics_dashboard' %}" class="btn btn-outline-primary">
+            <i class="bi bi-graph-up"></i> Dashboard
+        </a>
+        <button onclick="window.print()" class="btn btn-outline-secondary">
+            <i class="bi bi-printer"></i> Print
+        </button>
+    </div>
+</div>
+
+<!-- Report Type Selection -->
+<div class="card mb-4">
+    <div class="card-body">
+        <h6 class="card-title">Report Type</h6>
+        <div class="btn-group" role="group">
+            <a href="{% url 'inventory:inventory_reports' %}?type=stock_levels" 
+               class="btn {% if report_type == 'stock_levels' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                Stock Levels
+            </a>
+            <a href="{% url 'inventory:inventory_reports' %}?type=low_stock" 
+               class="btn {% if report_type == 'low_stock' %}btn-warning{% else %}btn-outline-warning{% endif %}">
+                Low Stock Alert
+            </a>
+            <a href="{% url 'inventory:inventory_reports' %}?type=category_summary" 
+               class="btn {% if report_type == 'category_summary' %}btn-info{% else %}btn-outline-info{% endif %}">
+                Category Summary
+            </a>
+            <a href="{% url 'inventory:inventory_reports' %}?type=all_items" 
+               class="btn {% if report_type == 'all_items' %}btn-secondary{% else %}btn-outline-secondary{% endif %}">
+                All Items
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Report Content -->
+{% if report_type == 'category_summary' %}
+    <!-- Category Summary Report -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">Category Summary</h5>
+        </div>
+        <div class="card-body">
+            {% if categories %}
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Category</th>
+                                <th>Items Count</th>
+                                <th>Total Quantity</th>
+                                <th>Total Value</th>
+                                <th>Average Price</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for category in categories %}
+                            <tr>
+                                <td><strong>{{ category.category }}</strong></td>
+                                <td>{{ category.item_count }}</td>
+                                <td>{{ category.total_quantity }}</td>
+                                <td>${{ category.total_value|floatformat:2 }}</td>
+                                <td>${{ category.avg_price|floatformat:2 }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p class="text-muted">No categories found.</p>
+            {% endif %}
+        </div>
+    </div>
+
+{% else %}
+    <!-- Items Report (Stock Levels, Low Stock, All Items) -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">Items Report</h5>
+        </div>
+        <div class="card-body">
+            {% if items %}
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Item Name</th>
+                                <th>Category</th>
+                                <th>Quantity</th>
+                                <th>Price</th>
+                                <th>Total Value</th>
+                                <th>Status</th>
+                                <th>Supplier</th>
+                                <th>Last Updated</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in items %}
+                            <tr>
+                                <td>
+                                    <a href="{% url 'inventory:item_detail' item.pk %}" class="text-decoration-none">
+                                        {{ item.name }}
+                                    </a>
+                                </td>
+                                <td>{{ item.category }}</td>
+                                <td>
+                                    <span class="badge {% if item.quantity > item.reorder_level %}bg-success{% elif item.quantity > 0 %}bg-warning{% else %}bg-danger{% endif %}">
+                                        {{ item.quantity }}
+                                    </span>
+                                </td>
+                                <td>${{ item.price }}</td>
+                                <td>${{ item.total_value|floatformat:2 }}</td>
+                                <td>
+                                    <span class="badge {% if item.stock_status == 'In Stock' %}bg-success{% elif item.stock_status == 'Low Stock' %}bg-warning{% else %}bg-danger{% endif %}">
+                                        {{ item.stock_status }}
+                                    </span>
+                                </td>
+                                <td>{{ item.supplier|default:"—" }}</td>
+                                <td>{{ item.updated_at|date:"M d, Y H:i" }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Report Summary -->
+                <div class="mt-4">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <h6>Total Items</h6>
+                                    <h4>{{ items|length }}</h4>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <h6>Total Quantity</h6>
+                                    <h4>{% widthratio items|length 1 1 as total_qty %}
+                                        {% for item in items %}{{ item.quantity|add:0 }}{% if not forloop.last %}+{% endif %}{% empty %}0{% endfor %}
+                                    </h4>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <h6>Total Value</h6>
+                                    <h4>${%  for item in items %}{{ item.total_value|floatformat:2 }}{% if not forloop.last %}+{% endif %}{% empty %}0.00{% endfor %}</h4>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <h6>Generated</h6>
+                                    <h4>{{ "now"|date:"M d, Y" }}</h4>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% else %}
+                <div class="text-center mt-5">
+                    <i class="bi bi-inbox display-1 text-muted"></i>
+                    <h3>No items found</h3>
+                    <p class="text-muted">No items match the current report criteria.</p>
+                    <a href="{% url 'inventory:home' %}" class="btn btn-primary">View All Items</a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+{% endif %}
+
+<!-- Print Styles -->
+<style>
+    @media print {
+        .btn-group, .card-header .btn, .navbar, .footer {
+            display: none !important;
+        }
+        
+        .card {
+            border: none !important;
+            box-shadow: none !important;
+        }
+        
+        .table {
+            font-size: 12px;
+        }
+        
+        h1 {
+            font-size: 24px;
+        }
+        
+        .badge {
+            border: 1px solid #000 !important;
+            color: #000 !important;
+            background: transparent !important;
+        }
+    }
+</style>
+{% endblock %}

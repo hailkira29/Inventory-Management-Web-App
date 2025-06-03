@@ -1,0 +1,160 @@
+{% extends 'inventory/base.html' %}
+
+{% block title %}Manage Alerts - Inventory Management{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="bi bi-bell"></i> Inventory Alerts</h1>
+    <div class="btn-group">
+        <a href="{% url 'inventory:analytics_dashboard' %}" class="btn btn-outline-primary">
+            <i class="bi bi-graph-up"></i> Dashboard
+        </a>
+        <a href="{% url 'inventory:inventory_reports' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-file-earmark-text"></i> Reports
+        </a>
+    </div>
+</div>
+
+<!-- Active Alerts -->
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0"><i class="bi bi-exclamation-triangle"></i> Active Alerts</h5>
+        <span class="badge bg-danger">{{ active_alerts|length }} Alert{{ active_alerts|length|pluralize }}</span>
+    </div>
+    <div class="card-body">
+        {% if active_alerts %}
+            {% for alert in active_alerts %}
+            <div class="alert alert-{% if alert.alert_type == 'LOW_STOCK' %}warning{% elif alert.alert_type == 'OUT_OF_STOCK' %}danger{% else %}info{% endif %} d-flex justify-content-between align-items-start" role="alert">
+                <div>
+                    <h6 class="alert-heading">
+                        <i class="bi bi-{% if alert.alert_type == 'LOW_STOCK' %}exclamation-triangle{% elif alert.alert_type == 'OUT_OF_STOCK' %}x-circle{% else %}info-circle{% endif %}"></i>
+                        {{ alert.get_alert_type_display }}: {{ alert.item.name }}
+                    </h6>
+                    <p class="mb-1">{{ alert.message }}</p>
+                    <small class="text-muted">
+                        Created: {{ alert.created_at|date:"M d, Y H:i" }} ({{ alert.created_at|timesince }} ago)
+                    </small>
+                    <div class="mt-2">
+                        <a href="{% url 'inventory:item_detail' alert.item.pk %}" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-eye"></i> View Item
+                        </a>
+                        <a href="{% url 'inventory:item_update' alert.item.pk %}" class="btn btn-sm btn-outline-warning">
+                            <i class="bi bi-pencil"></i> Edit Item
+                        </a>
+                    </div>
+                </div>
+                <div class="ms-3">
+                    <a href="{% url 'inventory:resolve_alert' alert.id %}" class="btn btn-outline-success btn-sm">
+                        <i class="bi bi-check"></i> Resolve
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="text-center py-5">
+                <i class="bi bi-check-circle display-1 text-success"></i>
+                <h3 class="mt-3">No Active Alerts</h3>
+                <p class="text-muted">Great! All your inventory items are properly stocked.</p>
+                <a href="{% url 'inventory:home' %}" class="btn btn-primary">View Inventory</a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Recently Resolved Alerts -->
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="bi bi-check-circle"></i> Recently Resolved Alerts</h5>
+    </div>
+    <div class="card-body">
+        {% if resolved_alerts %}
+            <div class="table-responsive">
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Item</th>
+                            <th>Alert Type</th>
+                            <th>Message</th>
+                            <th>Created</th>
+                            <th>Resolved</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for alert in resolved_alerts %}
+                        <tr>
+                            <td>
+                                <a href="{% url 'inventory:item_detail' alert.item.pk %}" class="text-decoration-none">
+                                    {{ alert.item.name }}
+                                </a>
+                            </td>
+                            <td>
+                                <span class="badge bg-secondary">{{ alert.get_alert_type_display }}</span>
+                            </td>
+                            <td>{{ alert.message|truncatechars:50 }}</td>
+                            <td>{{ alert.created_at|date:"M d, H:i" }}</td>
+                            <td>{{ alert.resolved_at|date:"M d, H:i" }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p class="text-muted">No resolved alerts found.</p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Alert Statistics -->
+<div class="row mt-4">
+    <div class="col-md-4">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="bi bi-exclamation-triangle text-warning display-4"></i>
+                <h4 class="mt-2">{{ active_alerts|length }}</h4>
+                <p class="text-muted">Active Alerts</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="bi bi-check-circle text-success display-4"></i>
+                <h4 class="mt-2">{{ resolved_alerts|length }}</h4>
+                <p class="text-muted">Resolved (Recent)</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="bi bi-clock text-info display-4"></i>
+                <h4 class="mt-2">Auto</h4>
+                <p class="text-muted">Alert Generation</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Help Section -->
+<div class="card mt-4">
+    <div class="card-header">
+        <h6 class="mb-0"><i class="bi bi-question-circle"></i> About Inventory Alerts</h6>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-4">
+                <h6><i class="bi bi-exclamation-triangle text-warning"></i> Low Stock Alerts</h6>
+                <p class="small text-muted">Generated when item quantity falls to or below the reorder level.</p>
+            </div>
+            <div class="col-md-4">
+                <h6><i class="bi bi-x-circle text-danger"></i> Out of Stock Alerts</h6>
+                <p class="small text-muted">Generated when item quantity reaches zero.</p>
+            </div>
+            <div class="col-md-4">
+                <h6><i class="bi bi-gear text-info"></i> Automatic Generation</h6>
+                <p class="small text-muted">Alerts are automatically created when you visit this page or the dashboard.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,185 @@
+{% extends 'inventory/base.html' %}
+
+{% block title %}Update Stock - {{ item.name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-boxes"></i> 
+                        Update Stock for "{{ item.name }}"
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <!-- Current Stock Info -->
+                    <div class="alert alert-info mb-4">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <strong>Current Stock:</strong> {{ item.quantity }}
+                            </div>
+                            <div class="col-md-4">
+                                <strong>Reorder Level:</strong> {{ item.reorder_level }}
+                            </div>
+                            <div class="col-md-4">
+                                <strong>Status:</strong> 
+                                <span class="badge {% if item.stock_status == 'Out of Stock' %}bg-danger{% elif item.stock_status == 'Low Stock' %}bg-warning{% else %}bg-success{% endif %}">
+                                    {{ item.stock_status }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Stock Update Form -->
+                    <form method="post" id="stockUpdateForm">
+                        {% csrf_token %}
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.transaction_type.id_for_label }}" class="form-label">
+                                        Transaction Type
+                                    </label>
+                                    {{ form.transaction_type }}
+                                    {% if form.transaction_type.errors %}
+                                        <div class="text-danger">
+                                            {{ form.transaction_type.errors }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.quantity.id_for_label }}" class="form-label">
+                                        Quantity
+                                    </label>
+                                    {{ form.quantity }}
+                                    {% if form.quantity.errors %}
+                                        <div class="text-danger">
+                                            {{ form.quantity.errors }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.reason.id_for_label }}" class="form-label">
+                                Reason (Optional)
+                            </label>
+                            {{ form.reason }}
+                            {% if form.reason.errors %}
+                                <div class="text-danger">
+                                    {{ form.reason.errors }}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Stock Calculation Preview -->
+                        <div class="alert alert-secondary" id="stockPreview" style="display: none;">
+                            <strong>New Stock Level:</strong> <span id="newStockLevel">{{ item.quantity }}</span>
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{% url 'inventory:item_detail' item.pk %}" class="btn btn-outline-secondary me-md-2">
+                                <i class="fas fa-arrow-left"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Update Stock
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Recent Transactions -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-history"></i> Recent Transactions
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if item.transactions.all %}
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Type</th>
+                                        <th>Quantity</th>
+                                        <th>Reason</th>
+                                        <th>User</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for transaction in item.transactions.all|slice:":5" %}
+                                    <tr>
+                                        <td>{{ transaction.timestamp|date:"M d, Y H:i" }}</td>
+                                        <td>
+                                            <span class="badge {% if transaction.transaction_type == 'IN' %}bg-success{% elif transaction.transaction_type == 'OUT' %}bg-danger{% else %}bg-warning{% endif %}">
+                                                {{ transaction.get_transaction_type_display }}
+                                            </span>
+                                        </td>
+                                        <td>{{ transaction.quantity }}</td>
+                                        <td>{{ transaction.reason|default:"-" }}</td>
+                                        <td>{{ transaction.user|default:"System" }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-muted">No transactions recorded yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('stockUpdateForm');
+    const transactionTypeField = document.getElementById('{{ form.transaction_type.id_for_label }}');
+    const quantityField = document.getElementById('{{ form.quantity.id_for_label }}');
+    const stockPreview = document.getElementById('stockPreview');
+    const newStockLevel = document.getElementById('newStockLevel');
+    const currentStock = {{ item.quantity }};
+
+    function updateStockPreview() {
+        const transactionType = transactionTypeField.value;
+        const quantity = parseInt(quantityField.value) || 0;
+        
+        if (quantity > 0) {
+            let newStock = currentStock;
+            
+            if (transactionType === 'IN') {
+                newStock = currentStock + quantity;
+            } else if (transactionType === 'OUT') {
+                newStock = currentStock - quantity;
+            } else if (transactionType === 'ADJUST') {
+                newStock = quantity; // Direct adjustment
+            }
+            
+            newStockLevel.textContent = Math.max(0, newStock);
+            stockPreview.style.display = 'block';
+            
+            // Add warning for negative stock
+            if (newStock < 0) {
+                stockPreview.className = 'alert alert-danger';
+                newStockLevel.textContent += ' (Warning: Negative stock!)';
+            } else {
+                stockPreview.className = 'alert alert-secondary';
+            }
+        } else {
+            stockPreview.style.display = 'none';
+        }
+    }
+
+    transactionTypeField.addEventListener('change', updateStockPreview);
+    quantityField.addEventListener('input', updateStockPreview);
+});
+</script>
+{% endblock %}

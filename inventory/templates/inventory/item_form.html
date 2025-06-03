@@ -1,0 +1,98 @@
+{% extends 'inventory/base.html' %}
+
+{% block title %}{{ title }} - Inventory Management{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="mb-0">{{ title }}</h3>
+            </div>
+            <div class="card-body">
+                {% if form.errors %}
+                    <div class="alert alert-danger">
+                        <h6>Please correct the following errors:</h6>
+                        {{ form.errors }}
+                    </div>
+                {% endif %}
+                
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.name.id_for_label }}" class="form-label">
+                            <i class="bi bi-tag"></i> Item Name
+                        </label>
+                        {{ form.name }}
+                        {% if form.name.help_text %}
+                            <div class="form-text">{{ form.name.help_text }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.quantity.id_for_label }}" class="form-label">
+                                    <i class="bi bi-boxes"></i> Quantity
+                                </label>
+                                {{ form.quantity }}
+                                {% if form.quantity.help_text %}
+                                    <div class="form-text">{{ form.quantity.help_text }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.price.id_for_label }}" class="form-label">
+                                    <i class="bi bi-currency-dollar"></i> Price
+                                </label>
+                                {{ form.price }}
+                                {% if form.price.help_text %}
+                                    <div class="form-text">{{ form.price.help_text }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                      <div class="d-flex justify-content-between">
+                        <a href="{% if item %}{% url 'inventory:item_detail' item.pk %}{% else %}{% url 'inventory:home' %}{% endif %}" 
+                           class="btn btn-secondary">
+                            <i class="bi bi-arrow-left"></i> Cancel
+                        </a>
+                        <button type="submit" class="btn btn-success">
+                            <i class="bi bi-check-lg"></i> {{ button_text }}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Preview Card (for update form) -->
+{% if item %}
+<div class="row justify-content-center mt-4">
+    <div class="col-md-8">
+        <div class="card border-info">
+            <div class="card-header bg-info text-white">
+                <h6 class="mb-0"><i class="bi bi-info-circle"></i> Current Item Information</h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <strong>Name:</strong> {{ item.name }}
+                    </div>
+                    <div class="col-md-4">
+                        <strong>Quantity:</strong> {{ item.quantity }}
+                    </div>
+                    <div class="col-md-4">
+                        <strong>Price:</strong> ${{ item.price }}
+                    </div>
+                </div>
+                <small class="text-muted">Last updated: {{ item.updated_at|date:"M d, Y \a\t g:i A" }}</small>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

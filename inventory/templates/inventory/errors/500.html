@@ -1,0 +1,50 @@
+{% extends 'inventory/base.html' %}
+
+{% block title %}Server Error{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 text-center">
+            <div class="error-container">
+                <h1 class="display-1 text-danger">500</h1>
+                <h2 class="mb-4">Internal Server Error</h2>
+                <p class="lead mb-4">
+                    Oops! Something went wrong on our end. We're working to fix it.
+                </p>
+                <div class="mb-4">
+                    <img src="https://via.placeholder.com/300x200/f8f9fa/dc3545?text=Server+Error" 
+                         alt="Server Error" class="img-fluid rounded">
+                </div>
+                <div class="alert alert-info" role="alert">
+                    <i class="fas fa-info-circle"></i>
+                    If this problem persists, please contact the administrator.
+                </div>
+                <div class="d-grid gap-2 d-md-flex justify-content-md-center">
+                    <a href="{% url 'inventory:home' %}" class="btn btn-primary me-md-2">
+                        <i class="fas fa-home"></i> Go Home
+                    </a>
+                    <a href="javascript:location.reload()" class="btn btn-outline-secondary">
+                        <i class="fas fa-refresh"></i> Try Again
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.error-container {
+    padding: 3rem;
+    background: linear-gradient(135deg, #fff5f5 0%, #fed7d7 100%);
+    border-radius: 15px;
+    box-shadow: 0 4px 15px rgba(220, 53, 69, 0.2);
+}
+
+.display-1 {
+    font-size: 8rem;
+    font-weight: 700;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+}
+</style>
+{% endblock %}
